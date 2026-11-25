@@ -134,7 +134,10 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
       exoPlayer.seekToDefaultPosition();
       exoPlayer.prepare();
     } else {
-      events.onError("VideoError", "Video player had error " + error, null);
+      // FORK PATCH: report errorCode / HTTP status / failing URL / active decoder instead of just
+      // error.toString() — under R8 that reads "v.j: Source error", which made 403, 404, connect
+      // timeout and connection reset indistinguishable in the app. See PlaybackErrorReport.
+      events.onError("VideoError", PlaybackErrorReport.describe(error), null);
     }
   }
 

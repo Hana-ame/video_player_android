@@ -1,8 +1,16 @@
 # FORK of flutter/packages video_player_android 2.12.2.
-# Patch: ExoPlayer DefaultRenderersFactory.setEnableDecoderFallback(true), so a
-# hardware decoder that cannot handle the format falls back to the software
-# decoder instead of failing playback. Only difference from upstream.
-# Used by Hana-ame/twitter-pic-flutter via dependency_overrides.
+# Patches on top of upstream (used by Hana-ame/twitter-pic-flutter via
+# dependency_overrides, tag 2.12.2-fallback.3):
+#   1. ExoPlayer DefaultRenderersFactory.setEnableDecoderFallback(true), so a
+#      hardware decoder that cannot handle the format falls back to the software
+#      decoder instead of failing playback (2.12.2-fallback.1).
+#   2. Runtime decoder-mode channel (auto / smart / prefer_software /
+#      hardware_only) + CompatRenderersFactory, which only REORDERS the codec
+#      list (never removes hardware decoders) for non-16-aligned resolutions
+#      (2.12.2-fallback.2).
+#   3. PlaybackErrorReport: playback errors now carry PlaybackException
+#      errorCode/name, the real HTTP status code, the failing URI and the
+#      decoder that was actually used (2.12.2-fallback.3).
 name: video_player_android
 description: Android implementation of the video_player plugin (fork with decoder fallback).
 repository: https://github.com/Hana-ame/video_player_android
