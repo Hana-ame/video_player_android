@@ -13,8 +13,8 @@ import androidx.annotation.VisibleForTesting;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.DefaultLoadControl;
-import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import io.flutter.plugins.videoplayer.CompatRenderersFactory;
 import io.flutter.plugins.videoplayer.ExoPlayerEventListener;
 import io.flutter.plugins.videoplayer.VideoAsset;
 import io.flutter.plugins.videoplayer.VideoPlayer;
@@ -67,8 +67,7 @@ public final class TextureVideoPlayer extends VideoPlayer implements SurfaceProd
           // outright instead of retrying with the software decoder (c2.android.*).
           // With fallback on, hardware is still preferred and software is only
           // used when hardware cannot handle the video.
-          builder.setRenderersFactory(
-              new DefaultRenderersFactory(context).setEnableDecoderFallback(true));
+          builder.setRenderersFactory(CompatRenderersFactory.create(context, options));
           if (options.backBufferDurationMs != null) {
             if (options.backBufferDurationMs < 0) {
               throw new IllegalArgumentException("backBufferDurationMs must be at least 0");

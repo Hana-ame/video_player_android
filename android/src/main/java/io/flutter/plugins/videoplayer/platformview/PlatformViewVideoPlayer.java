@@ -11,8 +11,8 @@ import androidx.annotation.VisibleForTesting;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.DefaultLoadControl;
-import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import io.flutter.plugins.videoplayer.CompatRenderersFactory;
 import io.flutter.plugins.videoplayer.ExoPlayerEventListener;
 import io.flutter.plugins.videoplayer.VideoAsset;
 import io.flutter.plugins.videoplayer.VideoPlayer;
@@ -61,8 +61,7 @@ public class PlatformViewVideoPlayer extends VideoPlayer {
           ExoPlayer.Builder builder = new ExoPlayer.Builder(context);
           // FORK PATCH (Hana-ame/twitter-pic-flutter): enable hardware -> software
           // decoder fallback. See TextureVideoPlayer for the rationale.
-          builder.setRenderersFactory(
-              new DefaultRenderersFactory(context).setEnableDecoderFallback(true));
+          builder.setRenderersFactory(CompatRenderersFactory.create(context, options));
           if (options.backBufferDurationMs != null) {
             if (options.backBufferDurationMs < 0) {
               throw new IllegalArgumentException("backBufferDurationMs must be at least 0");

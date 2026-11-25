@@ -14,6 +14,7 @@ import io.flutter.FlutterInjector;
 import io.flutter.Log;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugins.videoplayer.platformview.PlatformVideoViewFactory;
 import io.flutter.plugins.videoplayer.platformview.PlatformViewVideoPlayer;
 import io.flutter.plugins.videoplayer.texture.TextureVideoPlayer;
@@ -22,8 +23,17 @@ import io.flutter.view.TextureRegistry;
 /** Android platform implementation of the VideoPlayerPlugin. */
 public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
   private static final String TAG = "VideoPlayerPlugin";
+  /**
+   * FORK PATCH (Hana-ame/twitter-pic-flutter): lightweight MethodChannel for switching the
+   * Android Media3 decoder mode ("auto" / "software" / "hardware_only") without altering the
+   * upstream Pigeon contract.
+   */
+  public static final String DECODER_MODE_CHANNEL =
+      "plugins.flutter.dev/video_player_android/decoder_mode";
+
   private final LongSparseArray<VideoPlayer> videoPlayers = new LongSparseArray<>();
   private FlutterState flutterState;
+  @Nullable private MethodChannel decoderModeChannel;
   private final VideoPlayerOptions sharedOptions = new VideoPlayerOptions();
   private long nextPlayerIdentifier = 1;
 
@@ -47,12 +57,32 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
         .registerViewFactory(
             "plugins.flutter.dev/video_player_android",
             new PlatformVideoViewFactory(videoPlayers::get));
+
+    decoderModeChannel = new MethodChannel(binding.getBinaryMessenger(), DECODER_MODE_CHANNEL);
+    decoderModeChannel.setMethodCallHandler(
+        (call, result) -> {
+          if ("setDecoderMode".equals(call.method)) {
+            String requested = call.arguments instanceof String ? (String) call.arguments : null;
+            sharedOptions.decoderMode = VideoPlayerOptions.normalizeDecoderMode(requested);
+            result.success(sharedOptions.decoderMode);
+          } else if ("getDecoderMode".equals(call.method)) {
+            result.success(sharedOptions.decoderMode);
+          } else if ("getLastDecoderInfo".equals(call.method)) {
+            result.success(DecoderTelemetry.getLastInfo());
+          } else {
+            result.notImplemented();
+          }
+        });
   }
 
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
     if (flutterState == null) {
       Log.wtf(TAG, "Detached from the engine before registering to it.");
+    }
+    if (decoderModeChannel != null) {
+      decoderModeChannel.setMethodCallHandler(null);
+      decoderModeChannel = null;
     }
     flutterState.stopListening(binding.getBinaryMessenger());
     flutterState = null;

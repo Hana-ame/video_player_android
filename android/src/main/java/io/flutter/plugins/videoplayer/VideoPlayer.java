@@ -21,6 +21,7 @@ import androidx.media3.common.TrackSelectionOverride;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import io.flutter.view.TextureRegistry.SurfaceProducer;
 import java.util.ArrayList;
@@ -85,6 +86,22 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
     exoPlayer.prepare();
     exoPlayerEventListener = createExoPlayerEventListener(exoPlayer, surfaceProducer);
     exoPlayer.addListener(exoPlayerEventListener);
+    final String activeDecoderMode = VideoPlayerOptions.normalizeDecoderMode(options.decoderMode);
+    exoPlayer.addAnalyticsListener(
+        new AnalyticsListener() {
+          @Override
+          public void onVideoDecoderInitialized(
+              @NonNull EventTime eventTime,
+              @NonNull String decoderName,
+              long initializedTimestampMs,
+              long initializationDurationMs) {
+            Format fmt = exoPlayer.getVideoFormat();
+            int w = fmt != null ? fmt.width : Format.NO_VALUE;
+            int h = fmt != null ? fmt.height : Format.NO_VALUE;
+            boolean unaligned = CompatRenderersFactory.isUnalignedResolution(w, h);
+            DecoderTelemetry.record(decoderName, w, h, activeDecoderMode, unaligned);
+          }
+        });
     setAudioAttributes(exoPlayer, options.mixWithOthers);
   }
 
