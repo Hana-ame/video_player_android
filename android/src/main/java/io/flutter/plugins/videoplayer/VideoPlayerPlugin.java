@@ -4,7 +4,10 @@
 
 package io.flutter.plugins.videoplayer;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.LongSparseArray;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -69,6 +72,23 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
             result.success(sharedOptions.decoderMode);
           } else if ("getLastDecoderInfo".equals(call.method)) {
             result.success(DecoderTelemetry.getLastInfo());
+          } else if ("openExternalVideo".equals(call.method)) {
+            String url = call.arguments instanceof String ? (String) call.arguments : null;
+            if (url == null || url.isEmpty() || flutterState == null) {
+              result.error("INVALID_ARGS", "Missing video URL or plugin not attached", null);
+              return;
+            }
+            try {
+              Intent intent = new Intent(Intent.ACTION_VIEW);
+              intent.setDataAndType(Uri.parse(url), "video/*");
+              intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+              flutterState.applicationContext.startActivity(intent);
+              result.success(true);
+            } catch (ActivityNotFoundException e) {
+              result.error("NO_PLAYER", "未找到可用的外部视频播放器应用", null);
+            } catch (Exception e) {
+              result.error("LAUNCH_FAILED", e.getMessage(), null);
+            }
           } else {
             result.notImplemented();
           }

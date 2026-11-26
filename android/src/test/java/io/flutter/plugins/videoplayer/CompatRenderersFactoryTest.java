@@ -8,6 +8,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.net.Uri;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.datasource.DataSpec;
+import androidx.media3.datasource.HttpDataSource;
+import java.io.IOException;
+import java.util.Collections;
+
 import org.junit.Test;
 
 public class CompatRenderersFactoryTest {
@@ -61,5 +68,20 @@ public class CompatRenderersFactoryTest {
 
     VideoPlayerOptions copy = new VideoPlayerOptions(original);
     assertEquals(VideoPlayerOptions.DECODER_MODE_SMART, copy.decoderMode);
+  }
+
+  @Test
+  public void formatPlaybackError_includesHttpStatusCodeFromCause() {
+    DataSpec spec = new DataSpec(Uri.parse("http://127.0.0.1:8443/vid/1.mp4"));
+    HttpDataSource.InvalidResponseCodeException http404 =
+        new HttpDataSource.InvalidResponseCodeException(
+            404, "Not Found", new IOException("404"), Collections.emptyMap(), spec, new byte[0]);
+    PlaybackException ex =
+        new PlaybackException(
+            "Source error", http404, PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS);
+
+    String formatted = ExoPlayerEventListener.formatPlaybackError(ex);
+    assertTrue(formatted.contains("ERROR_CODE_IO_BAD_HTTP_STATUS"));
+    assertTrue(formatted.contains("HTTP 404"));
   }
 }
